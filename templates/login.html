@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login · #1 Calculator</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #f7f8fc;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .login-card {
+      background: #ffffff;
+      border: 1px solid #eef2f6;
+      border-radius: 1.5rem;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      box-shadow: 0 4px 32px rgba(31, 42, 68, 0.07);
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: #1a2035;
+      margin-bottom: 0.3rem;
+      letter-spacing: -0.03em;
+    }
+
+    .subhead {
+      color: #8a94a6;
+      font-size: 0.88rem;
+      margin-bottom: 1.5rem;
+      font-weight: 400;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.78rem 1rem;
+      margin-bottom: 0.75rem;
+      border-radius: 0.85rem;
+      border: 1.5px solid #e2e8f0;
+      background: #f9fafb;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      color: #1a2035;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+      border-color: #1f2a44;
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(31, 42, 68, 0.08);
+    }
+
+    input::placeholder {
+      color: #b0b8c9;
+    }
+
+    .auth-btn {
+      width: 100%;
+      padding: 0.78rem;
+      border-radius: 2rem;
+      border: none;
+      background: #1f2a44;
+      color: #ffffff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      letter-spacing: 0.01em;
+    }
+
+    .auth-btn:hover {
+      background: #2c3e66;
+      box-shadow: 0 4px 16px rgba(31, 42, 68, 0.18);
+    }
+
+    .auth-btn:active {
+      transform: scale(0.99);
+    }
+
+    .google-btn {
+      margin-top: 0.75rem;
+      width: 100%;
+      padding: 0.72rem;
+      border-radius: 2rem;
+      border: 1.5px solid #e2e8f0;
+      background: #ffffff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #1a2035;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+
+    .google-btn:hover {
+      background: #f7f8fc;
+      border-color: #c5cdd8;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .g-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .divider {
+      margin: 1.1rem 0;
+      font-size: 0.78rem;
+      color: #b0b8c9;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #eef2f6;
+    }
+
+    .link {
+      margin-top: 1.2rem;
+      font-size: 0.83rem;
+      color: #8a94a6;
+    }
+
+    .link a {
+      color: #1f2a44;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .link a:hover {
+      text-decoration: underline;
+    }
+
+    .error {
+      color: #b91c1c;
+      font-size: 0.8rem;
+      margin-top: 0.8rem;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 0.65rem;
+      padding: 0.5rem 0.8rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-card">
+  <h1>#1 Web Calculator</h1>
+  <div class="subhead">Login to continue</div>
+
+  <!-- EMAIL LOGIN -->
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Password">
+
+  <button class="auth-btn" onclick="login()">Log in</button>
+
+  <div class="divider">or</div>
+
+  <!-- GOOGLE LOGIN -->
+  <button class="google-btn" onclick="googleLogin()">
+    <svg class="g-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    </svg>
+    Sign in with Google
+  </button>
+
+  <div id="error" class="error"></div>
+
+  <!-- SIGNUP LINK -->
+  <div class="link">
+    Don't have an account? <a href="/signup">Sign up</a>
+  </div>
+</div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyACtt9csZKS2a-PaVbOSDRNC-6xh-nJUz0",
+    authDomain: "calculator-4cd6b.firebaseapp.com",
+    projectId: "calculator-4cd6b",
+    appId: "1:648117773768:web:237871d1f5ed550fcf8cfd"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  function showError(msg) {
+    const el = document.getElementById("error");
+    el.innerText = msg;
+    el.style.display = "block";
+  }
+
+  function sendToken(token) {
+    return fetch("/login_google", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idToken: token })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Server error");
+      window.location.href = "/dashboard";
+    });
+  }
+
+  // EMAIL LOGIN
+  function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    if (!email || !password) {
+      showError("Enter email and password");
+      return;
+    }
+
+    auth.signInWithEmailAndPassword(email, password)
+      .then(user => user.user.getIdToken())
+      .then(sendToken)
+      .catch(err => {
+        let msg = "Login failed. ";
+        if (err.code === "auth/user-not-found") msg += "User not found.";
+        else if (err.code === "auth/wrong-password") msg += "Wrong password.";
+        else msg += err.message;
+        showError(msg);
+      });
+  }
+
+  // GOOGLE LOGIN
+  function googleLogin() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    auth.signInWithPopup(provider)
+      .then(user => user.user.getIdToken())
+      .then(sendToken)
+      .catch(err => {
+        showError("Google login failed");
+        console.error(err);
+      });
+  }
+</script>
+
+</body>
+</html>
