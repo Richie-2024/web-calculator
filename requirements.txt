@@ -2,4 +2,6 @@ gradio
 scikit-learn
 numpy
 joblib
-flask
+flask==3.0.3
+firebase-admin==6.5.0
+gunicorn==21.2.0
