@@ -1,3 +1,4 @@
+import os
 from flask import Flask, render_template, request, session, redirect
 import firebase_admin
 from firebase_admin import credentials, auth as admin_auth, firestore
@@ -5,13 +6,36 @@ from firebase_admin import credentials, auth as admin_auth, firestore
 app = Flask(__name__)
 app.secret_key = "supersecretkey"  # Consider using environment variable in production
 
-# Initialize Firebase Admin
-cred = credentials.Certificate("serviceAccountKey.json")
-firebase_admin.initialize_app(cred)
+# ----------------------------
+# Debug route to list deployed files
+# ----------------------------
+@app.route("/list-files")
+def list_files():
+    files = os.listdir()
+    return "<br>".join(files)
+
+# ----------------------------
+# Initialize Firebase Admin with error logging
+# ----------------------------
+try:
+    cred_path = "serviceAccountKey.json"
+    print(f"Initializing Firebase using: {cred_path}")
+    print("Files in current directory:", os.listdir())
+    
+    cred = credentials.Certificate(cred_path)
+    firebase_admin.initialize_app(cred)
+    print("Firebase initialized successfully!")
+except FileNotFoundError:
+    print(f"ERROR: {cred_path} not found in deployed files!")
+except Exception as e:
+    print(f"ERROR initializing Firebase: {e}")
 
 # Initialize Firestore
 db = firestore.client()
 
+# ----------------------------
+# Routes
+# ----------------------------
 @app.route("/")
 def index():
     return render_template("login.html")
