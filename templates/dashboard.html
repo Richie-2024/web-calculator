@@ -205,6 +205,35 @@
 
     .utility-btn, .action-btn { min-height: 54px; border-radius: var(--radius-md); font-weight: 600; }
 
+    /* ── Save button — eye-catching amber/gold ── */
+    .btn-save {
+      background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+      border: none !important;
+      color: white !important;
+      font-weight: 700 !important;
+      box-shadow: 0 3px 12px rgba(217, 119, 6, 0.45) !important;
+      letter-spacing: 0.01em;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-save:hover {
+      background: linear-gradient(135deg, #fbbf24, #d97706) !important;
+      box-shadow: 0 4px 16px rgba(217, 119, 6, 0.55) !important;
+    }
+    .btn-save::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: var(--radius-md);
+      animation: savePulse 2.2s ease infinite;
+      pointer-events: none;
+    }
+    @keyframes savePulse {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+
     .sidebar-card { padding: 18px; }
 
     .section-head {
@@ -251,6 +280,12 @@
       background: #fff;
     }
 
+    /* Saved items get no padding — header/body handle spacing */
+    .saved-item {
+      padding: 0;
+      overflow: hidden;
+    }
+
     .history-btn {
       width: 100%;
       background: none;
@@ -268,6 +303,8 @@
       justify-content: space-between;
       gap: 12px;
       align-items: start;
+      padding: 14px;
+      cursor: pointer;
     }
 
     .saved-info { flex: 1; min-width: 0; }
@@ -308,6 +345,7 @@
       flex-shrink: 0;
       flex-wrap: wrap;
       justify-content: flex-end;
+      align-items: center;
     }
 
     .mini-btn {
@@ -317,6 +355,55 @@
       border-radius: var(--radius-sm);
       font-size: 0.85rem;
       font-weight: 600;
+    }
+
+    /* Chevron toggle */
+    .saved-chevron {
+      font-size: 11px;
+      color: var(--muted);
+      transition: transform 0.22s ease;
+      display: inline-block;
+      user-select: none;
+      padding: 0 2px;
+    }
+    .saved-chevron.open { transform: rotate(180deg); }
+
+    /* Calculations accordion */
+    .saved-calcs {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.2s ease;
+      border-top: 0px solid var(--line);
+      background: var(--surface-2);
+    }
+    .saved-calcs.open {
+      max-height: 320px;
+      overflow-y: auto;
+      border-top: 1px solid var(--line);
+    }
+
+    .calc-entry {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.85rem;
+    }
+    .calc-entry:last-child { border-bottom: none; }
+    .calc-entry-expr {
+      flex: 1;
+      min-width: 0;
+      word-break: break-all;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .calc-entry-result {
+      white-space: nowrap;
+      color: var(--success);
+      font-weight: 700;
+      font-size: 0.85rem;
     }
 
     .modal {
@@ -468,10 +555,7 @@
         gap: 8px;
       }
 
-      /* Hide √ and ^ on very small screens — still accessible via keyboard */
       .key.function { display: none; }
-
-      /* 0 spans full row when 4-col and no function keys */
       .key.zero { grid-column: span 2; }
 
       .utility-row {
@@ -581,7 +665,7 @@
           <button id="calculateBtn" class="btn action-btn btn-primary" type="button">Calculate</button>
           <button class="btn action-btn" data-action="clear-entry" type="button">C</button>
           <button class="btn action-btn btn-danger" data-action="all-clear" type="button">AC</button>
-          <button id="openSaveModalBtn" class="btn action-btn" type="button">Save</button>
+          <button id="openSaveModalBtn" class="btn action-btn btn-save" type="button">⬇ Save</button>
         </div>
       </section>
 
@@ -708,7 +792,6 @@
       return Number.isInteger(n) ? String(n) : String(Number(n.toPrecision(12)));
     }
 
-    /* Result only updates on Calculate — not on input */
     function setResult(value, isError = false) {
       els.result.textContent = value;
       els.result.classList.remove("error", "pending");
@@ -859,6 +942,21 @@
       }
     }
 
+    function buildCalcsHtml(historyArr) {
+      if (!Array.isArray(historyArr) || !historyArr.length) {
+        return `<div class="calc-entry"><span style="color:var(--muted);font-size:0.85rem;">No entries.</span></div>`;
+      }
+      return historyArr.map(item => {
+        const parsed = parseHistoryItem(item);
+        return `
+          <div class="calc-entry">
+            <span class="calc-entry-expr">${escapeHtml(parsed.expression)}</span>
+            <span class="calc-entry-result">= ${escapeHtml(parsed.result)}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
     async function loadSavedHistories() {
       if (!currentUser) {
         els.savedList.innerHTML = `<div class="empty">Sign in to see saved histories.</div>`;
@@ -875,12 +973,16 @@
         }
 
         let html = "";
+        let firstDoc = true;
         snapshot.forEach(doc => {
           const data = doc.data();
           const count = Array.isArray(data.history) ? data.history.length : 0;
+          const isFirst = firstDoc;
+          firstDoc = false;
+
           html += `
             <div class="saved-item" data-doc-id="${doc.id}">
-              <div class="saved-top">
+              <div class="saved-top" data-toggle-id="${doc.id}">
                 <div class="saved-info">
                   <div class="saved-title-row">
                     <span class="saved-title" id="title-text-${doc.id}">${escapeHtml(data.title || "Untitled")}</span>
@@ -896,12 +998,16 @@
                   <div class="saved-date">${escapeHtml(formatFirestoreDate(data.createdAt))}</div>
                   <div class="saved-count">${count} entr${count === 1 ? "y" : "ies"}</div>
                 </div>
-                <div class="saved-actions">
+                <div class="saved-actions" data-actions-stop>
                   <button class="btn mini-btn" type="button" data-action="load" data-id="${doc.id}">Load</button>
                   <button class="btn mini-btn" type="button" data-action="rename-start" data-id="${doc.id}" id="rename-btn-${doc.id}">Rename</button>
                   <button class="btn mini-btn btn-success" type="button" data-action="rename-save" data-id="${doc.id}" id="rename-save-btn-${doc.id}" style="display:none;">OK</button>
                   <button class="btn mini-btn btn-danger" type="button" data-action="delete" data-id="${doc.id}">Delete</button>
+                  <span class="saved-chevron ${isFirst ? "open" : ""}" id="chevron-${doc.id}">▼</span>
                 </div>
+              </div>
+              <div class="saved-calcs ${isFirst ? "open" : ""}" id="calcs-${doc.id}">
+                ${buildCalcsHtml(data.history)}
               </div>
             </div>
           `;
@@ -911,6 +1017,15 @@
         console.error(err);
         els.savedList.innerHTML = `<div class="empty">Error loading saved histories.</div>`;
       }
+    }
+
+    function toggleCalcs(docId) {
+      const calcs = document.getElementById(`calcs-${docId}`);
+      const chevron = document.getElementById(`chevron-${docId}`);
+      if (!calcs) return;
+      const isOpen = calcs.classList.contains("open");
+      calcs.classList.toggle("open", !isOpen);
+      chevron && chevron.classList.toggle("open", !isOpen);
     }
 
     function startRename(docId) {
@@ -1043,6 +1158,13 @@
 
     document.addEventListener("click", event => {
       const button = event.target.closest("button");
+
+      /* Saved-history header toggle — only fires if click is NOT on the actions area */
+      const toggleHeader = event.target.closest("[data-toggle-id]");
+      if (toggleHeader && !event.target.closest("[data-actions-stop]")) {
+        toggleCalcs(toggleHeader.dataset.toggleId);
+      }
+
       if (!button) return;
 
       if (button.dataset.value) { appendValue(button.dataset.value); return; }
@@ -1054,7 +1176,7 @@
       if (button.id === "modalConfirmBtn") { saveCurrentHistory(); return; }
 
       if (button.id === "logoutBtn") {
-        auth.signOut().then(() => { window.location.href = "/"; })
+        auth.signOut().then(() => { window.location.href = "/logout"; })
           .catch(err => { console.error(err); showToast("Failed to sign out.", "error"); });
         return;
       }
